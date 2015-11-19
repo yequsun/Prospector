@@ -136,7 +136,8 @@ public class Prospector : MonoBehaviour {
 
 	void MoveToTarget(CardProspector cd){
 		if (target != null) {
-			MoveToDiscard(target);
+			MoveToDiscard (target);
+		}
 			target = cd;
 			cd.state = CardState.target;
 			cd.transform.parent = layoutAnchor;
@@ -147,7 +148,6 @@ public class Prospector : MonoBehaviour {
 			cd.faceUp = true;
 			cd.SetSortingLayerName(layout.discardPile.layerName);
 			cd.SetSortOrder(0);
-		}
 	}
 
 	void UpdateDrawPile(){
