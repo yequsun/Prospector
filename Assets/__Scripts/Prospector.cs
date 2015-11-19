@@ -2,10 +2,20 @@
 using System.Collections;
 using System.Collections.Generic;
 
+public enum ScoreEvent{
+	draw,
+	mine,
+	mineGold,
+	gameWin,
+	gameLoss
+}
+
 
 public class Prospector : MonoBehaviour {
 
 	static public Prospector 	S;
+	static public int SCORE_FROM_PREV_ROUND=0;
+	static public int HIGH_SCORE = 0;
 	public Deck					deck;
 	public TextAsset			deckXML;
 	public Vector3 layoutCenter;
@@ -17,11 +27,20 @@ public class Prospector : MonoBehaviour {
 	public List<CardProspector> tableau;
 	public List<CardProspector> discardPile;
 	public List<CardProspector> drawPile;
+
+	public int chain = 0;
+	public int scoreRun = 0;
+	public int score = 0;
 	public Layout layout;
 	public TextAsset layoutXML;
 
 	void Awake(){
 		S = this;
+		if (PlayerPrefs.HasKey ("ProspectorHighScore")) {
+			HIGH_SCORE = PlayerPrefs.GetInt("ProspectorHighScore");
+		}
+		score += SCORE_FROM_PREV_ROUND;
+		SCORE_FROM_PREV_ROUND = 0;
 	}
 
 
@@ -65,8 +84,10 @@ public class Prospector : MonoBehaviour {
 			}
 			tableau.Remove(cd);
 			MoveToTarget(cd);
+			SetTableauFaces();
 			break;
 		}
+		CheckForGameOver ();
 	}
 
 	public bool AdjacentRank(CardProspector c0,CardProspector c1){
@@ -105,6 +126,13 @@ public class Prospector : MonoBehaviour {
 			cp.state = CardState.tableau;
 			cp.SetSortingLayerName(tSD.layerName);
 			tableau.Add(cp);
+		}
+
+		foreach (CardProspector tCP in tableau) {
+			foreach(int hid in tCP.slotDef.hiddenBy){
+				cp = FindCardByLayoutID(hid);
+				tCP.hiddenBy.Add(cp);
+			}
 		}
 		MoveToTarget (Draw ());
 		UpdateDrawPile ();
@@ -167,10 +195,51 @@ public class Prospector : MonoBehaviour {
 		}
 	}
 
+	CardProspector FindCardByLayoutID(int layoutID){
+		foreach (CardProspector tCP in tableau) {
+			if(tCP.layoutID == layoutID){
+				return tCP;
+			}
+		}
+		return null;
+	}
 
+	void SetTableauFaces(){
+		foreach (CardProspector cd in tableau) {
+			bool fup = true;
+			foreach(CardProspector cover in cd.hiddenBy){
+				if(cover.state == CardState.tableau){
+					fup = false;
+				}
+			}
+			cd.faceUp = fup;
+		}
+	}
 
+	void CheckForGameOver(){
+		if (tableau.Count == 0) {
+			GameOver(true);
+			return;
+		}
+		if (drawPile.Count > 0) {
+			return;
+		}
+		foreach (CardProspector cd in tableau) {
+			if(AdjacentRank(cd, target)){
+				return;
+			}
+		}
+		GameOver (false);
+	}
 
-
+	void GameOver(bool won){
+		if (won) {
+			print ("Game Over. You won!");
+		} else {
+			print ("Game Over. You lost.");
+		}
+		Application.LoadLevel ("__Prospector_Scene_0");
+	}
 
 
 
